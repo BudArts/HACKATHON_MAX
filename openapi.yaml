@@ -1,0 +1,1076 @@
+openapi: 3.1.0
+info:
+  title: УчусьИИ
+  description: 'API ИИ-наставника «УчусьИИ»: вход через MAX, задачи учеников, диалоги
+    с наставником, аналитика педагога, дайджесты родителя, согласия и персональные
+    данные (152-ФЗ). Маршруты /dev/* существуют только в режиме локальной проверки
+    (DEV_LOGIN_ENABLED).'
+  version: 0.1.0
+paths:
+  /api/v1/auth/max:
+    post:
+      tags:
+      - Авторизация
+      summary: Вход по стартовым данным MAX
+      operationId: login_with_max_api_v1_auth_max_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaxAuthRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - Авторизация
+      summary: Обновление токена доступа
+      operationId: refresh_tokens_api_v1_auth_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/logout:
+    post:
+      tags:
+      - Авторизация
+      summary: Завершение сессии
+      operationId: logout_api_v1_auth_logout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/me:
+    get:
+      tags:
+      - Кабинет
+      summary: Профиль
+      operationId: me_api_v1_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserView'
+      security:
+      - HTTPBearer: []
+    delete:
+      tags:
+      - Кабинет
+      summary: Прекращение обработки и удаление данных
+      operationId: erase_me_api_v1_me_delete
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Erase Me Api V1 Me Delete
+      security:
+      - HTTPBearer: []
+    patch:
+      tags:
+      - Кабинет
+      summary: Обновить профиль
+      operationId: update_me_api_v1_me_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserView'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/me/phone:
+    patch:
+      tags:
+      - Кабинет
+      summary: Сохранить номер телефона из MAX
+      operationId: share_phone_api_v1_me_phone_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneShareRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserView'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/me/personal-data:
+    get:
+      tags:
+      - Кабинет
+      summary: Выписка об обрабатываемых данных
+      operationId: personal_data_report_api_v1_me_personal_data_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalDataReport'
+      security:
+      - HTTPBearer: []
+  /api/v1/legal:
+    get:
+      tags:
+      - Персональные данные
+      summary: Действующие редакции документов
+      operationId: list_documents_api_v1_legal_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PolicyView'
+                type: array
+                title: Response List Documents Api V1 Legal Get
+  /api/v1/legal/{code}:
+    get:
+      tags:
+      - Персональные данные
+      summary: Текст документа
+      operationId: get_document_api_v1_legal__code__get
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Code
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyView'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/consents:
+    get:
+      tags:
+      - Персональные данные
+      summary: Состояние согласий
+      operationId: my_consents_api_v1_consents_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConsentState'
+                type: array
+                title: Response My Consents Api V1 Consents Get
+      security:
+      - HTTPBearer: []
+  /api/v1/consents/{purpose}:
+    post:
+      tags:
+      - Персональные данные
+      summary: Предоставить согласие
+      operationId: grant_consent_api_v1_consents__purpose__post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purpose
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Purpose
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentDecision'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentState'
+                title: Response Grant Consent Api V1 Consents  Purpose  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Персональные данные
+      summary: Отозвать согласие
+      operationId: revoke_consent_api_v1_consents__purpose__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purpose
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Purpose
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentState'
+                title: Response Revoke Consent Api V1 Consents  Purpose  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/personal-data/erasure-request:
+    post:
+      tags:
+      - Персональные данные
+      summary: Запрос на удаление персональных данных
+      operationId: erasure_request_api_v1_personal_data_erasure_request_post
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Erasure Request Api V1 Personal Data Erasure Request
+                  Post
+      security:
+      - HTTPBearer: []
+  /api/v1/tutor/overview:
+    get:
+      tags:
+      - Аналитика учителя
+      summary: Аналитика по классам
+      operationId: overview_api_v1_tutor_overview_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: grades
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: integer
+          - type: 'null'
+          description: Фильтр по классам
+          title: Grades
+        description: Фильтр по классам
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Overview Api V1 Tutor Overview Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tutor/risk:
+    get:
+      tags:
+      - Аналитика учителя
+      summary: Группа риска
+      operationId: risk_api_v1_tutor_risk_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: grades
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: integer
+          - type: 'null'
+          title: Grades
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Risk Api V1 Tutor Risk Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tutor/link-code:
+    post:
+      tags:
+      - Аналитика учителя
+      summary: Код для привязки родителя
+      operationId: link_code_api_v1_tutor_link_code_post
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Link Code Api V1 Tutor Link Code Post
+      security:
+      - HTTPBearer: []
+  /api/v1/tasks:
+    get:
+      tags:
+      - Задачи
+      summary: История задач ученика
+      operationId: list_tasks_api_v1_tasks_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Tasks Api V1 Tasks Get
+      security:
+      - HTTPBearer: []
+  /api/v1/tasks/statistics:
+    get:
+      tags:
+      - Задачи
+      summary: Статистика ученика
+      operationId: statistics_api_v1_tasks_statistics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Statistics Api V1 Tasks Statistics Get
+      security:
+      - HTTPBearer: []
+  /api/v1/tasks/{task_id}:
+    get:
+      tags:
+      - Задачи
+      summary: Диалог по задаче
+      operationId: task_detail_api_v1_tasks__task_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Task Detail Api V1 Tasks  Task Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/tasks/{task_id}/abandon:
+    post:
+      tags:
+      - Задачи
+      summary: Оставить задачу
+      operationId: abandon_task_api_v1_tasks__task_id__abandon_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications:
+    get:
+      tags:
+      - Уведомления
+      summary: Входящие уведомления
+      operationId: list_notifications_api_v1_notifications_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: unread_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Unread Only
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationView'
+                title: Response List Notifications Api V1 Notifications Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications/{notification_id}/read:
+    post:
+      tags:
+      - Уведомления
+      summary: Отметить прочитанным
+      operationId: mark_read_api_v1_notifications__notification_id__read_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Notification Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications/read-all:
+    post:
+      tags:
+      - Уведомления
+      summary: Отметить все прочитанными
+      operationId: mark_all_read_api_v1_notifications_read_all_post
+      responses:
+        '204':
+          description: Successful Response
+      security:
+      - HTTPBearer: []
+  /api/v1/dev/users:
+    get:
+      tags:
+      - Локальная проверка
+      summary: Пользователи для демо-входа
+      operationId: dev_users_api_v1_dev_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DevUserView'
+                type: array
+                title: Response Dev Users Api V1 Dev Users Get
+  /api/v1/dev/init-data:
+    get:
+      tags:
+      - Локальная проверка
+      summary: Подписать стартовые данные
+      operationId: dev_init_data_api_v1_dev_init_data_get
+      parameters:
+      - name: max_user_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          description: Идентификатор пользователя MAX
+          title: Max User Id
+        description: Идентификатор пользователя MAX
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevInitDataResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/parent/children:
+    get:
+      tags:
+      - Кабинет родителя
+      summary: Дети, привязанные к кабинету
+      operationId: children_api_v1_parent_children_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Children Api V1 Parent Children Get
+      security:
+      - HTTPBearer: []
+  /api/v1/parent/link:
+    post:
+      tags:
+      - Кабинет родителя
+      summary: Привязать ребёнка по коду
+      operationId: link_api_v1_parent_link_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Link Api V1 Parent Link Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/parent/children/{student_id}/digest:
+    get:
+      tags:
+      - Кабинет родителя
+      summary: Недельный дайджест по ребёнку
+      operationId: digest_api_v1_parent_children__student_id__digest_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Student Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Digest Api V1 Parent Children  Student Id  Digest
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AuthResponse:
+      properties:
+        user:
+          $ref: '#/components/schemas/UserView'
+        tokens:
+          anyOf:
+          - $ref: '#/components/schemas/TokenPair'
+          - type: 'null'
+        consents:
+          items:
+            $ref: '#/components/schemas/ConsentState'
+          type: array
+          title: Consents
+        onboarding_required:
+          type: boolean
+          title: Onboarding Required
+      type: object
+      required:
+      - user
+      - tokens
+      - consents
+      - onboarding_required
+      title: AuthResponse
+    ConsentDecision:
+      properties:
+        accept:
+          type: boolean
+          title: Accept
+          default: true
+      type: object
+      title: ConsentDecision
+    ConsentState:
+      properties:
+        purpose:
+          type: string
+          title: Purpose
+        granted:
+          type: boolean
+          title: Granted
+        policy_code:
+          type: string
+          title: Policy Code
+        policy_version:
+          type: string
+          title: Policy Version
+        granted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Granted At
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+      type: object
+      required:
+      - purpose
+      - granted
+      - policy_code
+      - policy_version
+      title: ConsentState
+    DevInitDataResponse:
+      properties:
+        init_data:
+          type: string
+          title: Init Data
+        max_user_id:
+          type: integer
+          title: Max User Id
+      type: object
+      required:
+      - init_data
+      - max_user_id
+      title: DevInitDataResponse
+    DevUserView:
+      properties:
+        max_user_id:
+          type: integer
+          title: Max User Id
+        role:
+          type: string
+          title: Role
+        first_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: First Name
+        last_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Name
+      type: object
+      required:
+      - max_user_id
+      - role
+      title: DevUserView
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LinkRequest:
+      properties:
+        code:
+          type: string
+          title: Code
+      type: object
+      required:
+      - code
+      title: LinkRequest
+    MaxAuthRequest:
+      properties:
+        init_data:
+          type: string
+          maxLength: 4096
+          minLength: 16
+          title: Init Data
+      type: object
+      required:
+      - init_data
+      title: MaxAuthRequest
+    NotificationView:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        title:
+          type: string
+          title: Title
+        body:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Body
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        read_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Read At
+      type: object
+      required:
+      - id
+      - kind
+      - title
+      - created_at
+      title: NotificationView
+    PersonalDataReport:
+      properties:
+        profile:
+          $ref: '#/components/schemas/UserView'
+        consents:
+          items:
+            $ref: '#/components/schemas/ConsentState'
+          type: array
+          title: Consents
+        tasks_total:
+          type: integer
+          title: Tasks Total
+        notifications_total:
+          type: integer
+          title: Notifications Total
+        audit_entries:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Audit Entries
+      type: object
+      required:
+      - profile
+      - consents
+      - tasks_total
+      - notifications_total
+      - audit_entries
+      title: PersonalDataReport
+    PhoneShareRequest:
+      properties:
+        phone:
+          type: string
+          maxLength: 20
+          minLength: 10
+          title: Phone
+        auth_date:
+          type: string
+          maxLength: 20
+          minLength: 8
+          title: Auth Date
+        hash:
+          type: string
+          maxLength: 128
+          minLength: 32
+          title: Hash
+      type: object
+      required:
+      - phone
+      - auth_date
+      - hash
+      title: PhoneShareRequest
+    PolicyView:
+      properties:
+        code:
+          type: string
+          title: Code
+        version:
+          type: string
+          title: Version
+        title:
+          type: string
+          title: Title
+        body:
+          type: string
+          title: Body
+      type: object
+      required:
+      - code
+      - version
+      - title
+      - body
+      title: PolicyView
+    ProfileUpdate:
+      properties:
+        email:
+          anyOf:
+          - type: string
+            maxLength: 254
+          - type: 'null'
+          title: Email
+      type: object
+      title: ProfileUpdate
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 32
+          title: Refresh Token
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    TokenPair:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          type: string
+          title: Refresh Token
+        token_type:
+          type: string
+          const: Bearer
+          title: Token Type
+          default: Bearer
+        expires_in:
+          type: integer
+          title: Expires In
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - expires_in
+      title: TokenPair
+    UserView:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        role:
+          type: string
+          title: Role
+        first_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: First Name
+        last_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Name
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        locale:
+          type: string
+          title: Locale
+        grade:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Grade
+        is_active:
+          type: boolean
+          title: Is Active
+        has_phone:
+          type: boolean
+          title: Has Phone
+          default: false
+        has_email:
+          type: boolean
+          title: Has Email
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - role
+      - locale
+      - is_active
+      - created_at
+      title: UserView
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: JWT доступа мини-приложения
+      scheme: bearer

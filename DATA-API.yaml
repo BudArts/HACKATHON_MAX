@@ -1,0 +1,48 @@
+# Дескриптор собственного API решения (требование техregulations/FAQ, вопрос 12).
+# Сама спецификация интерфейса — файл openapi.yaml (OpenAPI 3.1) рядом с этим файлом;
+# она же доступна на работающем сервере по адресу /openapi.json.
+
+name: uchusai-api
+title: УчусьИИ — API ИИ-наставника школьника (мессенджер MAX)
+version: 0.1.0
+format: OpenAPI 3.1
+specification: ./openapi.yaml
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный запуск (docker compose up -d, профиль HTTP)
+  - url: https://<домен-команды>/api/v1
+    description: Адрес развёрнутого решения — заполняется после публикации сервера
+
+authentication:
+  scheme: Bearer JWT
+  description: >
+    Пара токенов выдаётся после входа по подписанным стартовым данным MAX
+    (POST /api/v1/auth/max, поле init_data). Access-токен живёт 30 минут,
+    обновление — POST /api/v1/auth/refresh.
+
+test_access:
+  description: >
+    Демо-режим включается переменной DEV_LOGIN_ENABLED=true при APP_ENV=development
+    (значения по умолчанию в docker-compose). На главной странице мини-приложения
+    появляется выбор кабинета; те же шаги доступны через API.
+  users:
+    - {max_user_id: 9100101, role: ученик, name: Артём Ковалёв}
+    - {max_user_id: 9100001, role: родитель, name: Мария Ковалёва (мама Артёма Ковалёва)}
+    - {max_user_id: 9100002, role: родитель, name: Игорь Носов}
+    - {max_user_id: 9000000, role: педагог, name: Ольга Лебедева (классный руководитель 7А)}
+    - {max_user_id: 9000001, role: педагог, name: Сергей Панкратов (классный руководитель 8А)}
+  steps:
+    - GET /api/v1/dev/users — список демо-пользователей
+    - GET /api/v1/dev/init-data?max_user_id=9100001 — подписанные стартовые данные
+    - POST /api/v1/auth/max с полем init_data — пара токенов
+    - заголовок Authorization: Bearer <access_token> в остальных запросах
+
+webhooks:
+  - url: https://<домен-команды>/webhook/max
+    description: Приёмник событий MAX Bot API; подпись проверяется по заголовку X-Max-Bot-Api-Secret
+
+related_documents:
+  - docs/api.md — описание маршрутов, ошибок, вебхука и алгоритмов проверки подписей
+  - docs/architecture.md — архитектура сервиса
+  - docs/security.md — модель угроз и соответствие 152-ФЗ

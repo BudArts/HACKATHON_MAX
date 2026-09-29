@@ -1,0 +1,66 @@
+[project]
+name = "uchusai-backend"
+version = "0.1.0"
+description = "Сервис обращений родителей и учителей в мессенджере MAX"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "httpx>=0.28",
+    "PyJWT>=2.10",
+    "cryptography>=44.0",
+    "argon2-cffi>=23.1",
+    "python-multipart>=0.0.18",
+    "structlog>=24.4",
+    "email-validator>=2.2",
+    "Pillow>=11.0",
+    "pytesseract>=0.3.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "aiosqlite>=0.20",
+    "respx>=0.22",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-PyJWT",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "C4", "SIM", "RUF", "S", "ASYNC"]
+ignore = ["S101", "B008", "RUF012", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S311", "B017"]
+"tests/conftest.py" = ["E402"]
+"migrations/*" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,103 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    server_name ${APP_DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/acme;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${APP_DOMAIN};
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_trusted_certificate /etc/nginx/certs/chain.pem;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://st.max.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://st.max.ru https://*.max.ru; connect-src 'self' https://*.max.ru; font-src 'self' data:; frame-ancestors https://max.ru https://*.max.ru; base-uri 'self'; form-action 'self'; object-src 'none'" always;
+
+        set $backend_origin backend;
+
+    location = /nginx-health {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    location = /healthz {
+        access_log off;
+        proxy_pass http://$backend_origin:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_read_timeout 5s;
+    }
+
+    location /api/ {
+        limit_req zone=api burst=60 nodelay;
+        proxy_pass http://$backend_origin:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+
+    location = /api/v1/auth/max {
+        limit_req zone=auth burst=10 nodelay;
+        proxy_pass http://$backend_origin:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /webhook/max {
+        proxy_pass http://$backend_origin:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    location / {
+        root /var/www/miniapp;
+        try_files $uri $uri/ /index.html;
+
+        location ~* \.(?:js|css|woff2?|png|jpe?g|svg|webp|ico)$ {
+            root /var/www/miniapp;
+            expires 30d;
+            add_header Cache-Control "public, immutable";
+            access_log off;
+        }
+
+        location = /index.html {
+            root /var/www/miniapp;
+            add_header Cache-Control "no-store";
+        }
+    }
+}
